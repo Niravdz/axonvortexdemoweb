@@ -1,0 +1,2246 @@
+/* ==========================================================================
+   AXONVORTEX — Architectural Swiss Grid & Scroll System
+   Inspired by https://santalarch.com/#philosophy
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --viewport-width: 1440;
+  --viewport-height: 800;
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, sans-serif;
+  --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --ease-out: cubic-bezier(0.25, 1, 0.5, 1);
+  --transition: 0.5s var(--ease-out);
+  --transition-fast: 0.3s var(--ease-out);
+  --transition-slow: 0.8s var(--ease-out);
+
+  --c-base-light-primary: #f0f0f0;
+  --c-base-line-highlight: rgba(242, 240, 240, 0.25);
+  --c-base-line-dark-bg: rgba(242, 240, 240, 0.08);
+  --c-pure-black: #000000;
+  --c-pure-white: #ffffff;
+
+  --c-base-dark-primary: #0f0f0f;
+  --c-base-dark-primary-rgb: 15, 15, 15;
+  --c-base-dark-primary-07: rgba(15, 15, 15, 0.07);
+  --c-base-dark-primary-20: rgba(15, 15, 15, 0.2);
+  --c-base-dark-primary-40: rgba(15, 15, 15, 0.45);
+
+  --c-light-primary: var(--c-base-light-primary);
+  --c-light-secondary: rgba(242, 240, 240, 0.45);
+  --c-dark-primary: var(--c-base-dark-primary);
+  --c-dark-secondary: rgba(15, 15, 15, 0.48);
+
+  --c-line-current: rgba(15, 15, 15, 0.12);
+  --c-line-inverse: rgba(240, 240, 240, 0.12);
+
+  --padding: 1.25rem;
+  --padding-sm: 0.625rem;
+  --header-height: 3.25rem;
+  --column-gap: 1.25rem;
+  --half-column-gap: calc(var(--column-gap) * 0.5);
+
+  --z-bg: 1;
+  --z-common: 10;
+  --z-header: 100;
+  --z-drawer: 500;
+  --z-preloader: 900;
+  --z-cursor: 1100;
+}
+
+:root[data-theme='dark'] {
+  --c-light-primary: #0f0f0f;
+  --c-light-secondary: rgba(15, 15, 15, 0.48);
+  --c-dark-primary: #f0f0f0;
+  --c-dark-secondary: rgba(242, 240, 240, 0.48);
+  --c-line-current: rgba(240, 240, 240, 0.12);
+  --c-line-inverse: rgba(15, 15, 15, 0.12);
+}
+
+html {
+  font-family: var(--font-sans);
+  background-color: var(--c-light-primary);
+  color: var(--c-dark-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition:
+    background-color var(--transition),
+    color var(--transition);
+  scroll-behavior: auto;
+}
+
+body {
+  background-color: var(--c-light-primary);
+  color: var(--c-dark-primary);
+  overflow-x: hidden;
+  line-height: 1.25;
+  transition:
+    background-color var(--transition),
+    color var(--transition);
+}
+
+a,
+button {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+img,
+svg,
+canvas,
+video {
+  display: block;
+  max-width: 100%;
+}
+
+/* ==========================================================================
+   CUSTOM DIFFERENCE CURSOR (Santalarch style)
+   ========================================================================== */
+.cursor-pos {
+  position: fixed;
+  top: -1.25rem;
+  left: -1.25rem;
+  pointer-events: none;
+  mix-blend-mode: difference;
+  z-index: var(--z-cursor);
+  will-change: transform;
+}
+
+@media (hover: none), (max-width: 1023px) {
+  .cursor-pos {
+    display: none;
+  }
+}
+
+.cursor-scale {
+  transform: scale(0.18);
+  transform-origin: center center;
+  transition: transform 0.35s var(--ease-out);
+}
+
+.cursor-pos.is-hovered .cursor-scale {
+  transform: scale(1.15);
+}
+
+.cursor-circle {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background-color: var(--c-base-light-primary);
+}
+
+/* ==========================================================================
+   SLIDE-UP BUTTONS & UNDERLINE CLIP LINKS (Exact Santalarch interactions)
+   ========================================================================== */
+.slide-btn {
+  display: inline-grid;
+  overflow: hidden;
+  position: relative;
+  line-height: 1.15;
+}
+
+.slide-btn__text {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  transition: transform var(--transition-slow);
+  will-change: transform;
+}
+
+.slide-btn__text:last-child {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+@media (hover: hover) {
+  .slide-btn:hover .slide-btn__text,
+  .hover-trigger:hover .slide-btn .slide-btn__text {
+    transform: translateY(-100%);
+  }
+}
+
+.underline-btn {
+  display: inline-grid;
+  position: relative;
+  --underline-color: currentColor;
+  --underline-offset: 20%;
+  --underline-thickness: 1px;
+}
+
+.underline-btn__text {
+  grid-column: 1 / -1;
+  grid-row: 1;
+}
+
+.underline-btn__text:last-child {
+  clip-path: inset(-50% 0 -50% 0);
+  color: transparent;
+  text-decoration-line: underline;
+  text-decoration-color: var(--underline-color);
+  text-decoration-thickness: var(--underline-thickness);
+  text-underline-offset: var(--underline-offset);
+  transition: clip-path var(--transition-slow);
+}
+
+@media (hover: hover) {
+  .underline-btn:hover .underline-btn__text:last-child,
+  .hover-trigger:hover .underline-btn .underline-btn__text:last-child {
+    clip-path: inset(-50% 100% -50% 0);
+  }
+}
+
+/* Pill / Architectural Action Button */
+.arch-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  border: 1px solid currentColor;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  position: relative;
+  overflow: hidden;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.arch-cta--solid {
+  background-color: var(--c-dark-primary);
+  color: var(--c-light-primary);
+  border-color: var(--c-dark-primary);
+}
+
+.arch-cta--solid:hover {
+  background-color: transparent;
+  color: var(--c-dark-primary);
+}
+
+.arch-cta--outline:hover {
+  background-color: var(--c-dark-primary);
+  color: var(--c-light-primary);
+}
+
+.arch-cta--light {
+  background-color: var(--c-light-primary);
+  color: var(--c-dark-primary);
+  border-color: var(--c-light-primary);
+}
+
+.arch-cta--light:hover {
+  background-color: transparent;
+  color: var(--c-light-primary);
+}
+
+.arch-cta--ghost-light {
+  color: var(--c-light-primary);
+  border-color: rgba(240, 240, 240, 0.3);
+}
+
+.arch-cta--ghost-light:hover {
+  background-color: var(--c-light-primary);
+  color: var(--c-dark-primary);
+  border-color: var(--c-light-primary);
+}
+
+/* ==========================================================================
+   ARCHITECTURAL GRID SYSTEM (8-Column Swiss Layout + Hairlines)
+   ========================================================================== */
+.arch-grid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: var(--column-gap);
+  padding: 0 var(--padding);
+  width: 100%;
+}
+
+@media (max-width: 1023px) {
+  .arch-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.75rem;
+    padding: 0 1rem;
+  }
+}
+
+/* Sticky Background Hairlines (12.5%, 50%, 62.5%, Diagonal) */
+.global-grid-lines {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: var(--z-bg);
+  mix-blend-mode: difference;
+}
+
+.global-grid-line {
+  position: absolute;
+  background-color: var(--c-base-line-dark-bg);
+}
+
+.global-grid-line--v1 {
+  top: 0;
+  left: 12.5%;
+  width: 1px;
+  height: 100%;
+}
+
+.global-grid-line--v2 {
+  top: 0;
+  left: 50%;
+  width: 1px;
+  height: 100%;
+}
+
+.global-grid-line--v3 {
+  top: 0;
+  left: 62.5%;
+  width: 1px;
+  height: 100%;
+}
+
+.global-grid-line--h1 {
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 1px;
+}
+
+.global-grid-line--diag {
+  inset: 0;
+  background-color: transparent;
+  background-image: linear-gradient(
+    to top right,
+    transparent calc(50% - 0.5px),
+    rgba(242, 240, 240, 0.05) calc(50% - 0.5px),
+    rgba(242, 240, 240, 0.05) calc(50% + 0.5px),
+    transparent calc(50% + 0.5px)
+  );
+}
+
+@media (max-width: 1023px) {
+  .global-grid-line--v1,
+  .global-grid-line--v3 {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   HEADER & MONUMENTAL WORDMARK (mix-blend-mode: difference)
+   ========================================================================== */
+.site-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--header-height);
+  z-index: var(--z-header);
+  mix-blend-mode: difference;
+  color: var(--c-base-light-primary);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--padding);
+}
+
+.site-header__inner {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: var(--column-gap);
+  width: 100%;
+  align-items: center;
+}
+
+.site-header__brand {
+  grid-column: 1 / 3;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.site-header__brand-dot {
+  width: 6px;
+  height: 6px;
+  background-color: var(--c-base-light-primary);
+  display: inline-block;
+}
+
+.site-header__nav {
+  grid-column: 3 / 7;
+  display: flex;
+  align-items: center;
+  gap: 1.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.site-header__actions {
+  grid-column: 7 / 9;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.site-header__enquire-btn {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.7rem;
+  border-bottom: 1px solid var(--c-base-light-primary);
+  padding-bottom: 2px;
+}
+
+.site-header__menu-toggle {
+  display: none;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+@media (max-width: 1023px) {
+  .site-header__inner {
+    display: flex;
+    justify-content: space-between;
+  }
+  .site-header__nav {
+    display: none;
+  }
+  .site-header__menu-toggle {
+    display: inline-flex;
+  }
+}
+
+/* ==========================================================================
+   FIXED THEME INVERT BUTTON (Exact Santalarch Bottom-Left Orbit Icon)
+   ========================================================================== */
+.invert-button {
+  position: fixed;
+  bottom: 0.875rem;
+  left: var(--padding);
+  z-index: var(--z-header);
+  mix-blend-mode: difference;
+  color: var(--c-base-light-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.invert-icon {
+  width: 4.4375rem;
+  height: 2.3125rem;
+  margin: -0.625rem;
+  overflow: visible;
+}
+
+.dot-orbit {
+  transform-box: fill-box;
+  transform-origin: 50% 283.3333%;
+  transition: transform var(--transition-slow);
+}
+
+:root[data-theme='dark'] .dot-orbit {
+  transform: rotate(-180deg);
+}
+
+.underline-track {
+  transition: transform var(--transition-slow);
+}
+
+:root[data-theme='dark'] .underline-track {
+  transform: translateY(-13px);
+}
+
+.invert-underline {
+  stroke: var(--c-base-line-highlight);
+  transform-box: fill-box;
+  transform-origin: left center;
+  transition: transform var(--transition-slow);
+}
+
+@media (hover: hover) {
+  .invert-button:hover .invert-underline {
+    transform: scaleX(0);
+  }
+}
+
+/* ==========================================================================
+   SECTION INDEX COUNTER (Santalarch "01 | 03" blurred transition style)
+   ========================================================================== */
+.index-counter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+}
+
+.index-counter__sep {
+  width: 1px;
+  height: 0.9em;
+  background-color: currentColor;
+  opacity: 0.35;
+}
+
+.index-counter__total {
+  opacity: 0.4;
+}
+
+/* ==========================================================================
+   TYPOGRAPHY SCALE (Monumental Swiss Proportions)
+   ========================================================================== */
+.t-caption {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+
+.t-mono-label {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+
+.t-h1-display {
+  font-size: clamp(2.5rem, 5.4vw, 5.25rem);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  line-height: 0.96;
+}
+
+.t-h2-monument {
+  font-size: clamp(2.25rem, 4.8vw, 4.5rem);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 0.98;
+}
+
+.t-h3-editorial {
+  font-size: clamp(1.35rem, 2.2vw, 2.125rem);
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  line-height: 1.08;
+}
+
+.t-body-lg {
+  font-size: clamp(1rem, 1.25vw, 1.25rem);
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  line-height: 1.4;
+}
+
+.t-body {
+  font-size: 0.875rem;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.45;
+}
+
+/* ==========================================================================
+   HERO SECTION (Monumental Wordmark + Split Grid + Scroll Line)
+   ========================================================================== */
+.hero-section {
+  position: relative;
+  min-height: 100lvh;
+  padding-top: var(--header-height);
+  padding-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--c-line-current);
+}
+
+.hero-wordmark-wrap {
+  padding: 0.5rem var(--padding) 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+.hero-wordmark-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  color: var(--c-dark-primary);
+}
+
+.hero-middle {
+  margin-top: 3rem;
+  margin-bottom: 3rem;
+}
+
+.hero-tagline-col {
+  grid-column: 1 / 6;
+  text-align: right;
+  padding-right: 1.5rem;
+}
+
+.hero-desc-col {
+  grid-column: 6 / 9;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding-left: 0.5rem;
+}
+
+.hero-bottom-bar {
+  align-items: flex-end;
+}
+
+.hero-caption-col {
+  grid-column: 2 / 4;
+}
+
+.hero-ctas-col {
+  grid-column: 4 / 6;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.hero-scroll-col {
+  grid-column: 6 / 9;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.scroll-pulse-line {
+  width: 1px;
+  height: 3.5rem;
+  background: rgba(15, 15, 15, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+:root[data-theme='dark'] .scroll-pulse-line {
+  background: rgba(240, 240, 240, 0.15);
+}
+
+.scroll-pulse-line::after {
+  content: '';
+  position: absolute;
+  top: -100%;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: currentColor;
+  animation: scrollLineDrop 2.2s var(--ease-out) infinite;
+}
+
+@keyframes scrollLineDrop {
+  0% {
+    top: -100%;
+  }
+  100% {
+    top: 100%;
+  }
+}
+
+@media (max-width: 1023px) {
+  .hero-tagline-col {
+    grid-column: 1 / -1;
+    text-align: left;
+    padding-right: 0;
+  }
+  .hero-desc-col {
+    grid-column: 1 / -1;
+    margin-top: 1.5rem;
+    padding-left: 0;
+  }
+  .hero-caption-col,
+  .hero-ctas-col,
+  .hero-scroll-col {
+    grid-column: 1 / -1;
+    margin-top: 1rem;
+  }
+}
+
+/* ==========================================================================
+   #PHILOSOPHY SECTION (Santalarch 3D Cube/Vortex + Dark Split Plane Reveal)
+   ========================================================================== */
+.philosophy-section {
+  position: relative;
+  background-color: var(--c-dark-primary);
+  color: var(--c-light-primary);
+  overflow: clip;
+}
+
+.philosophy-sticky-stage {
+  position: sticky;
+  top: 0;
+  height: 100lvh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: calc(var(--header-height) + 1rem) var(--padding) 1.5rem;
+  overflow: hidden;
+}
+
+.philosophy-canvas-wrap {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.philosophy-top-row,
+.philosophy-bottom-row,
+.philosophy-center-row {
+  position: relative;
+  z-index: 5;
+}
+
+.philosophy-pillars-track {
+  position: relative;
+  z-index: 5;
+  padding: 0 var(--padding);
+}
+
+.philosophy-pillar-slide {
+  min-height: 85lvh;
+  display: flex;
+  align-items: center;
+}
+
+.philosophy-pillar-card {
+  grid-column: 5 / 9;
+  max-width: 34rem;
+  padding: 2rem;
+  background: rgba(15, 15, 15, 0.55);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(240, 240, 240, 0.14);
+}
+
+:root[data-theme='dark'] .philosophy-pillar-card {
+  background: rgba(240, 240, 240, 0.75);
+  border: 1px solid rgba(15, 15, 15, 0.14);
+}
+
+@media (max-width: 1023px) {
+  .philosophy-pillar-card {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ==========================================================================
+   APPROACH & SYSTEM SCHEMATIC (Santalarch Sticky 01|06 + Blueprint Door Zoom)
+   ========================================================================== */
+.approach-sticky-section {
+  position: relative;
+  padding: 7rem 0;
+  border-bottom: 1px solid var(--c-line-current);
+}
+
+.approach-left-sticky {
+  grid-column: 1 / 5;
+  position: sticky;
+  top: calc(50lvh - 5rem);
+  align-self: start;
+}
+
+.approach-right-list {
+  grid-column: 5 / 9;
+  display: flex;
+  flex-direction: column;
+  gap: 5rem;
+}
+
+.approach-item-card {
+  border-top: 1px solid var(--c-line-current);
+  padding-top: 1.5rem;
+  display: grid;
+  grid-template-columns: 3.5rem 1fr;
+  gap: 1.25rem;
+}
+
+@media (max-width: 1023px) {
+  .approach-left-sticky {
+    grid-column: 1 / -1;
+    position: static;
+    margin-bottom: 2.5rem;
+  }
+  .approach-right-list {
+    grid-column: 1 / -1;
+    gap: 3rem;
+  }
+}
+
+/* ==========================================================================
+   ARCHITECTURAL BLUEPRINT SCHEMATIC (Santalarch "Skeleton Door" Reimagined)
+   ========================================================================== */
+.blueprint-section {
+  position: relative;
+  padding: 6rem 0;
+  background-color: var(--c-dark-primary);
+  color: var(--c-light-primary);
+  border-bottom: 1px solid rgba(240, 240, 240, 0.12);
+  overflow: hidden;
+}
+
+.blueprint-frame {
+  position: relative;
+  border: 1px solid rgba(240, 240, 240, 0.14);
+  padding: 2.5rem;
+  margin-top: 3rem;
+}
+
+:root[data-theme='dark'] .blueprint-frame {
+  border-color: rgba(15, 15, 15, 0.14);
+}
+
+/* ==========================================================================
+   SOLUTIONS 3-COLUMN ASYMMETRICAL GRID (Santalarch #works & #services)
+   ========================================================================== */
+.solutions-section {
+  position: relative;
+  padding: 7rem 0;
+  border-bottom: 1px solid var(--c-line-current);
+}
+
+.solutions-3col {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--column-gap);
+  padding: 0 var(--padding);
+}
+
+@media (max-width: 1023px) {
+  .solutions-3col {
+    grid-template-columns: 1fr;
+  }
+}
+
+.solution-arch-card {
+  border: 1px solid var(--c-line-current);
+  padding: 2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 29rem;
+  position: relative;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.solution-arch-card:hover {
+  background-color: var(--c-dark-primary);
+  color: var(--c-light-primary);
+}
+
+.solution-arch-card:nth-child(2) {
+  margin-top: 3.5rem;
+}
+
+.solution-arch-card:nth-child(5) {
+  margin-top: 3.5rem;
+}
+
+@media (max-width: 1023px) {
+  .solution-arch-card:nth-child(2),
+  .solution-arch-card:nth-child(5) {
+    margin-top: 0;
+  }
+}
+
+.solution-tag-pill {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  padding: 0.25rem 0.55rem;
+  border: 1px solid currentColor;
+  opacity: 0.7;
+  transition: opacity var(--transition-fast);
+}
+
+.solution-tag-pill:hover {
+  opacity: 1;
+}
+
+/* ==========================================================================
+   PROCESS ACCORDION (Santalarch #process with rotating + icon)
+   ========================================================================== */
+.process-section {
+  position: relative;
+  padding: 7rem 0;
+  background-color: var(--c-dark-primary);
+  color: var(--c-light-primary);
+}
+
+.accordion-item {
+  position: relative;
+  padding: 1.5rem 0;
+}
+
+.accordion-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background-color: currentColor;
+  opacity: 0.14;
+  transition: opacity var(--transition-fast);
+}
+
+.accordion-item.active::before,
+.accordion-item:hover::before {
+  opacity: 1;
+}
+
+.accordion-header {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 3.5rem 1fr auto;
+  align-items: center;
+  gap: 1rem;
+  cursor: pointer;
+  padding: 0.5rem 0;
+}
+
+.icon-plus {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+}
+
+.plus-vertical {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform var(--transition-fast);
+}
+
+.icon-plus.active .plus-vertical {
+  transform: rotate(90deg);
+}
+
+.accordion-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--transition);
+}
+
+.accordion-item.active .accordion-body {
+  grid-template-rows: 1fr;
+}
+
+.accordion-body__inner {
+  overflow: hidden;
+}
+
+/* ==========================================================================
+   COMPANY / GLOBAL WIREFRAME GLOBE (Santalarch #company)
+   ========================================================================== */
+.company-section {
+  position: relative;
+  padding: 7rem 0;
+  overflow: hidden;
+  border-bottom: 1px solid var(--c-line-current);
+}
+
+.globe-bg-wrap {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0.08;
+}
+
+/* ==========================================================================
+   MULTI-STEP ENQUIRY & AUDIT DRAWER (Santalarch .popup with .decor-lines)
+   ========================================================================== */
+.enquiry-popup {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-drawer);
+  background-color: var(--c-dark-primary);
+  color: var(--c-light-primary);
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: var(--column-gap);
+  padding: 1.25rem var(--padding);
+  overflow-y: auto;
+}
+
+.enquiry-popup__decor-lines {
+  grid-column: 2 / 5;
+  grid-row: 1;
+  border: 1px solid rgba(242, 240, 240, 0.1);
+  background-image: linear-gradient(
+    to top right,
+    transparent calc(50% - 0.5px),
+    rgba(242, 240, 240, 0.1) calc(50% - 0.5px),
+    rgba(242, 240, 240, 0.1) calc(50% + 0.5px),
+    transparent calc(50% + 0.5px)
+  );
+  pointer-events: none;
+  position: relative;
+}
+
+.enquiry-popup__progress {
+  position: absolute;
+  top: 0;
+  left: -1px;
+  width: 2px;
+  height: 100%;
+  background-color: var(--c-light-primary);
+  transform-origin: top;
+  transition: transform var(--transition-fast);
+}
+
+.enquiry-popup__aside {
+  grid-column: 1 / 3;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  z-index: 2;
+  padding: 0.5rem 0;
+}
+
+.enquiry-popup__main {
+  grid-column: 5 / 9;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 4rem 0 1.5rem 1.5rem;
+  z-index: 2;
+}
+
+@media (max-width: 1023px) {
+  .enquiry-popup {
+    display: flex;
+    flex-direction: column;
+  }
+  .enquiry-popup__decor-lines {
+    display: none;
+  }
+  .enquiry-popup__main {
+    padding: 2rem 0;
+  }
+}
+
+.arch-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(240, 240, 240, 0.25);
+  color: inherit;
+  padding: 0.875rem 0;
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+:root[data-theme='dark'] .arch-input {
+  border-bottom-color: rgba(15, 15, 15, 0.25);
+}
+
+.arch-input:focus {
+  border-bottom-color: currentColor;
+}
+
+.arch-chip {
+  padding: 0.5rem 0.85rem;
+  border: 1px solid rgba(240, 240, 240, 0.22);
+  font-size: 0.75rem;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+:root[data-theme='dark'] .arch-chip {
+  border-color: rgba(15, 15, 15, 0.22);
+}
+
+.arch-chip.selected {
+  background-color: var(--c-light-primary);
+  color: var(--c-dark-primary);
+  border-color: var(--c-light-primary);
+}
+
+/* ==========================================================================
+   PRELOADER (Santalarch Minimalist Counter + Split Curtain)
+   ========================================================================== */
+.preloader-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-preloader);
+  background-color: var(--c-base-dark-primary);
+  color: var(--c-base-light-primary);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.5rem var(--padding);
+  transition:
+    clip-path 0.85s var(--ease-out),
+    opacity 0.6s var(--ease-out);
+}
+
+.preloader-overlay.done {
+  clip-path: inset(0 0 100% 0);
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   COOKIE BAR (Exact Santalarch Bottom-Left Compact Bar)
+   ========================================================================== */
+.santal-cookie-bar {
+  position: fixed;
+  bottom: 0;
+  left: 12.5%;
+  width: 18.5rem;
+  background-color: var(--c-base-dark-primary);
+  color: var(--c-base-light-primary);
+  padding: 0.75rem 0.875rem 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: var(--z-header);
+  font-size: 0.75rem;
+  border-top: 1px solid rgba(240, 240, 240, 0.12);
+}
+
+@media (max-width: 1023px) {
+  .santal-cookie-bar {
+    left: auto;
+    right: 0;
+    width: 100%;
+  }
+}
+
+
+/* ==========================================================================
+   SANTALARCH SCROLL-DRIVEN PARALLAX CHOREOGRAPHY STYLES
+   (Exact replicas of Styles 8, 9, 12, 13, 14, 15, 16, 17, 20, 22, 24, 25)
+   ========================================================================== */
+
+/* 1. HERO ROTATING DIAGONAL LINE & STICKY TAGLINE MASK */
+.santal-hero {
+  position: relative;
+  min-height: 210lvh;
+}
+
+.santal-hero-grid {
+  position: sticky;
+  top: 0;
+  height: 100lvh;
+  margin-bottom: -100lvh;
+  mix-blend-mode: difference;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.santal-hero-grid-line {
+  position: absolute;
+  background-color: var(--c-base-line-dark-bg);
+}
+
+.santal-hero-grid-line--1 {
+  top: 0;
+  left: 12.5%;
+  width: 1px;
+  height: 100%;
+}
+
+.santal-hero-grid-line--2 {
+  top: 0;
+  left: 62.5%;
+  width: 1px;
+  height: 100%;
+}
+
+.santal-hero-grid-line--diag {
+  inset: 0;
+  background-color: transparent;
+  background-image: linear-gradient(
+    var(--angle, 180deg),
+    transparent calc(50% - 0.5px),
+    rgba(242, 240, 240, 0.22) calc(50% - 0.5px),
+    rgba(242, 240, 240, 0.22) calc(50% + 0.5px),
+    transparent calc(50% + 0.5px)
+  );
+}
+
+.santal-tagline-wrap {
+  position: sticky;
+  top: 0;
+  height: 100lvh;
+  margin-bottom: -100lvh;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.santal-tagline-wrap.is-masked {
+  -webkit-mask-image: linear-gradient(
+    var(--angle, 180deg),
+    #000 50%,
+    transparent 50%
+  );
+  mask-image: linear-gradient(
+    var(--angle, 180deg),
+    #000 50%,
+    transparent 50%
+  );
+}
+
+.santal-tagline-container {
+  padding-top: 44lvh;
+  will-change: transform;
+}
+
+.santal-hero-description-col {
+  grid-column: 6 / 9;
+}
+
+.santal-hero-tagline-col {
+  grid-column: 1 / 6;
+  text-align: right;
+  padding-right: 1.5rem;
+  margin-top: 2rem;
+}
+
+.santal-hero-tagline__item {
+  display: block;
+}
+
+.santal-hero-body {
+  position: relative;
+  height: 100lvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-top: var(--header-height);
+  padding-bottom: 1.5rem;
+  z-index: 4;
+}
+
+.santal-hero-bottom {
+  align-items: flex-end;
+}
+
+@media (max-width: 1023px) {
+  .santal-hero-tagline-col,
+  .santal-hero-description-col {
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+}
+
+/* 2. #PHILOSOPHY 3D WEBGL CUBES + SHUTTER CURTAINS (Exact Santalarch Style 12 & 13) */
+.santal-cubes-wrap {
+  position: relative;
+  height: var(--height, 780lvh);
+  margin-top: -100lvh;
+  z-index: 5;
+}
+
+.santal-bg-wrap {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: calc(100% + 100lvh);
+  pointer-events: none;
+}
+
+.santal-cubes-bg {
+  position: sticky;
+  top: 0;
+  height: 100lvh;
+  color: var(--c-dark-primary);
+  pointer-events: none;
+  transition: color 0.45s ease;
+}
+
+.santal-cubes-bg.white {
+  color: var(--c-light-primary);
+}
+
+.santal-bg-line {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: calc(50lvh + 1px);
+  background-color: currentColor;
+  transform: scaleY(0);
+  will-change: transform, background-color;
+}
+
+.santal-bg-line--top {
+  top: 0;
+  transform-origin: top;
+}
+
+.santal-bg-line--bottom {
+  bottom: 0;
+  transform-origin: bottom;
+}
+
+.santal-cubes-target,
+.santal-video-wrap {
+  position: sticky;
+  top: 0;
+  height: 100lvh;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.santal-cubes-target {
+  margin-bottom: -100lvh;
+  z-index: 2;
+}
+
+.santal-video-wrap {
+  margin-bottom: -100lvh;
+  opacity: 0;
+  z-index: 3;
+}
+
+.santal-video-inner {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 220px;
+  height: 220px;
+  overflow: hidden;
+}
+
+.santal-video-gradients {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.santal-video-gradient {
+  position: absolute;
+  opacity: 0.6;
+}
+
+.santal-video-gradient--1 {
+  top: -2px;
+  left: -2px;
+  width: calc(100% + 4px);
+  height: 60%;
+  background-image: linear-gradient(180deg, #111, rgba(18, 18, 18, 0));
+}
+
+.santal-video-gradient--2 {
+  bottom: -2px;
+  left: -2px;
+  width: calc(100% + 4px);
+  height: 60%;
+  background-image: linear-gradient(0deg, #111, rgba(18, 18, 18, 0));
+}
+
+.santal-video-gradient--3 {
+  top: -2px;
+  left: -2px;
+  width: 60%;
+  height: calc(100% + 4px);
+  background-image: linear-gradient(90deg, #111, rgba(18, 18, 18, 0));
+}
+
+.santal-video-gradient--4 {
+  top: -2px;
+  right: -2px;
+  width: 60%;
+  height: calc(100% + 4px);
+  background-image: linear-gradient(-90deg, #111, rgba(18, 18, 18, 0));
+}
+
+.santal-cubes-content-wrap {
+  position: sticky;
+  top: 0;
+  height: 100lvh;
+  margin-bottom: -100lvh;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.santal-cubes-content-bg {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+
+.santal-grid-bg {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background-image: radial-gradient(
+    circle at 50% 50%,
+    rgba(240, 240, 240, 0.08) 0%,
+    transparent 70%
+  );
+}
+
+.santal-cubes-content-lines {
+  position: absolute;
+  inset: 0;
+  mix-blend-mode: difference;
+}
+
+.santal-cubes-content-lines__v {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 1px;
+  height: 100%;
+  background-color: var(--c-base-line-dark-bg);
+}
+
+.santal-cubes-content-lines__h {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 100%;
+  height: 1px;
+  background-color: var(--c-base-line-dark-bg);
+}
+
+.santal-cubes-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  padding-top: 50lvh;
+  color: var(--c-base-light-primary);
+}
+
+.santal-cubes-content.is-dark-text {
+  color: var(--c-dark-primary);
+}
+
+.santal-cubes-content__title {
+  grid-column: 2 / 5;
+  font-size: clamp(1.75rem, 3.2vw, 3.25rem);
+  font-weight: 500;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.santal-cubes-content__desc {
+  grid-column: 5 / 9;
+  max-width: 24rem;
+}
+
+@media (max-width: 1023px) {
+  .santal-cubes-content__title,
+  .santal-cubes-content__desc {
+    grid-column: 1 / -1;
+  }
+}
+
+.santal-cubes-nav-container {
+  position: sticky;
+  top: 0;
+  height: 100lvh;
+  align-items: flex-end;
+  padding-bottom: 1.25rem;
+  mix-blend-mode: difference;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.santal-cubes-nav-pos {
+  grid-column: 5 / 9;
+}
+
+/* Santalarch CommonNav (`data-v-80b969e1`) */
+.santal-common-nav {
+  color: var(--c-base-light-primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 2.5rem;
+  justify-content: space-between;
+  min-width: 12rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.santal-common-nav__captions {
+  position: relative;
+  display: flex;
+  min-width: 7.5rem;
+}
+
+.santal-common-nav__caption {
+  filter: blur(2px);
+  opacity: 0;
+  white-space: nowrap;
+  transition:
+    opacity var(--transition-fast),
+    filter var(--transition-fast);
+}
+
+.santal-common-nav__caption:not(:first-child) {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.santal-common-nav__caption.active {
+  filter: blur(0);
+  opacity: 1;
+}
+
+.santal-common-nav__indexes-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-mono);
+}
+
+.santal-common-nav__indexes {
+  position: relative;
+}
+
+.santal-common-nav__sizer {
+  visibility: hidden;
+}
+
+.santal-common-nav__index-item {
+  position: absolute;
+  right: 0;
+  top: 0;
+  filter: blur(2px);
+  opacity: 0;
+  transition:
+    opacity var(--transition-fast),
+    filter var(--transition-fast);
+}
+
+.santal-common-nav__index-item.active {
+  filter: blur(0);
+  opacity: 1;
+}
+
+.santal-common-nav__separator {
+  width: 1px;
+  height: 0.9em;
+  background-color: currentColor;
+  opacity: 0.45;
+}
+
+/* 3. #APPROACH HORIZONTAL SCRUBBING WORDS (Exact Santalarch Style 14) */
+.santal-approach-grid {
+  position: relative;
+  align-items: flex-start;
+  padding-top: 8rem;
+  padding-bottom: 12rem;
+  z-index: 6;
+}
+
+.santal-approach-title-wrap {
+  grid-column: 1 / 5;
+  position: sticky;
+  top: calc(50lvh - 6.36rem);
+}
+
+.santal-approach-title-inner {
+  display: flex;
+  align-items: center;
+  gap: 2.5rem;
+}
+
+.santal-approach-right-wrap {
+  grid-column: 5 / 9;
+}
+
+.santal-approach-words-clip {
+  overflow: hidden;
+  padding: 0.5rem 0;
+}
+
+.santal-approach-word-item {
+  will-change: transform, opacity;
+}
+
+.santal-approach-desc-wrap {
+  padding: 9rem 0 4rem;
+}
+
+@media (max-width: 1023px) {
+  .santal-approach-title-wrap,
+  .santal-approach-right-wrap {
+    grid-column: 1 / -1;
+    position: static;
+  }
+}
+
+/* 4. #DOOR SACRED-GEOMETRY MORPH & 3D EXPLODED BLUEPRINT (Styles 15 & 16) */
+.santal-door-section {
+  position: relative;
+  height: 480lvh;
+  margin-top: -100lvh;
+  z-index: 7;
+}
+
+.santal-door-horizontal-line {
+  position: relative;
+  top: 100lvh;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  margin-bottom: -1px;
+  background-color: var(--c-base-line-dark-bg);
+  mix-blend-mode: difference;
+}
+
+.santal-door-sticky {
+  position: sticky;
+  top: 0;
+  height: 100lvh;
+  margin-bottom: -100lvh;
+  width: 100%;
+  background-color: var(--c-dark-primary);
+  color: var(--c-light-primary);
+  overflow: hidden;
+  will-change: clip-path;
+}
+
+.santal-door-outline-container {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.santal-door-outline-wrap {
+  width: 100%;
+  height: 100%;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+.santal-door-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.santal-door-layers-stage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(32rem, 84vw);
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  pointer-events: none;
+  z-index: 3;
+  will-change: transform;
+}
+
+.santal-door-layer-card {
+  padding: 0.9rem 1.25rem;
+  border: 1px solid rgba(240, 240, 240, 0.28);
+  background: rgba(15, 15, 15, 0.72);
+  backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  will-change: transform, opacity;
+}
+
+.santal-door-hud {
+  position: relative;
+  z-index: 5;
+  height: 100lvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: calc(var(--header-height) + 1.5rem) 0 2.5rem;
+}
+
+/* 5. #WORKS CENTER-OUT VERTICAL SLIT IRIS + 3-COLUMN DIFFERENTIAL PARALLAX (Style 17) */
+.santal-works-dark-stage {
+  position: relative;
+  margin-top: -100lvh;
+  padding-top: 65lvh;
+  padding-bottom: 14rem;
+  background-color: var(--c-dark-primary);
+  color: var(--c-light-primary);
+  z-index: 8;
+  will-change: clip-path;
+}
+
+.santal-works-lines-wrap {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.santal-works-lines {
+  position: sticky;
+  top: 0;
+  height: 100lvh;
+  mix-blend-mode: difference;
+}
+
+.santal-works-lines__v {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 1px;
+  height: 100%;
+  background: rgba(240, 240, 240, 0.08);
+}
+
+.santal-works-lines__h {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 100%;
+  height: 1px;
+  background: rgba(240, 240, 240, 0.08);
+}
+
+.santal-works-header {
+  text-align: center;
+  margin-bottom: 5rem;
+  padding: 0 var(--padding);
+}
+
+.santal-works-columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--column-gap);
+  padding: 0 var(--padding);
+  align-items: start;
+}
+
+.santal-works-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2.25rem;
+  will-change: transform;
+}
+
+.santal-work-card {
+  position: relative;
+  cursor: pointer;
+  color: #f0f0f0;
+}
+
+.santal-work-card__Visual {
+  position: relative;
+  width: 100%;
+  border: 1px solid rgba(240, 240, 240, 0.18);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.02);
+  overflow: hidden;
+  transition: border-color 0.3s ease, background-color 0.3s ease;
+}
+
+.santal-work-card:hover .santal-work-card__Visual {
+  border-color: rgba(240, 240, 240, 0.65);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.santal-work-card__top,
+.santal-work-card__bottom {
+  position: relative;
+  z-index: 2;
+}
+
+.santal-work-card__top {
+  display: flex;
+  justify-content: space-between;
+}
+
+.santal-work-card--audit {
+  border: 1px solid rgba(240, 240, 240, 0.28);
+  padding: 2.25rem 1.75rem;
+  background: rgba(240, 240, 240, 0.04);
+}
+
+@media (max-width: 1023px) {
+  .santal-works-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 6. #SERVICES DUAL-CLIP HORIZONTAL RAIL (Exact Santalarch Style 20) */
+.santal-services-dark-track {
+  position: relative;
+  height: 560lvh;
+  margin-top: -25lvh;
+  background-color: var(--c-dark-primary);
+  color: var(--c-light-primary);
+  z-index: 9;
+}
+
+.santal-services-sticky-viewport {
+  position: sticky;
+  top: 0;
+  height: 100lvh;
+  width: 100%;
+  overflow: hidden;
+}
+
+.santal-services-blend-layer {
+  position: absolute;
+  inset: 0;
+  mix-blend-mode: difference;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.santal-services-rail {
+  position: absolute;
+  top: 0;
+  left: 75%;
+  width: 50%;
+  height: 100%;
+  will-change: transform;
+}
+
+.santal-services-rail__line {
+  width: 1px;
+  height: 100%;
+  background-color: var(--c-base-line-dark-bg);
+}
+
+.santal-services-titles-layer {
+  position: absolute;
+  top: 22lvh;
+  left: 0;
+  width: 100%;
+  height: 22lvh;
+  pointer-events: none;
+}
+
+.santal-services-titles-layer--dim {
+  opacity: 0.14;
+}
+
+.santal-services-titles-layer--bright {
+  clip-path: inset(0 18% 0 46%);
+}
+
+.santal-services-titles-row {
+  display: flex;
+  gap: 3.5rem;
+  padding-left: 48vw;
+  will-change: transform;
+}
+
+.santal-services-title-cell {
+  width: 26vw;
+  min-width: 18rem;
+  flex-shrink: 0;
+  color: #f0f0f0;
+}
+
+.santal-services-left-desc {
+  position: absolute;
+  left: var(--padding);
+  top: 48lvh;
+  max-width: 24rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  z-index: 6;
+}
+
+.santal-services-media-clip {
+  position: absolute;
+  bottom: 8lvh;
+  left: 0;
+  width: 100%;
+  height: 38lvh;
+  clip-path: inset(0 12% 0 46%);
+}
+
+.santal-services-media-row {
+  display: flex;
+  gap: 3.5rem;
+  padding-left: 48vw;
+  height: 100%;
+  will-change: transform;
+}
+
+.santal-services-media-cell {
+  width: 26vw;
+  min-width: 18rem;
+  height: 100%;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 1px solid rgba(240, 240, 240, 0.22);
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.santal-service-card-inner {
+  width: 100%;
+  height: 100%;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: #f0f0f0;
+  will-change: transform;
+}
+
+@media (max-width: 1023px) {
+  .santal-services-titles-layer--bright,
+  .santal-services-media-clip {
+    clip-path: none;
+  }
+  .santal-services-left-desc {
+    position: relative;
+    top: auto;
+    left: auto;
+    padding: 2rem var(--padding);
+  }
+}
+
+/* 7. #PROCESS STICKY LEFT + UPWARD ACCORDION ON DARK STAGE (Style 22) */
+.santal-process-dark {
+  position: relative;
+  margin-top: -20lvh;
+  padding: 10rem 0 12rem;
+  background-color: var(--c-dark-primary);
+  color: var(--c-light-primary);
+  z-index: 10;
+  overflow: clip;
+}
+
+.santal-process-overlay {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 10rem;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.santal-process-overlay--top {
+  top: 0;
+  background: linear-gradient(180deg, var(--c-dark-primary), transparent);
+}
+
+.santal-process-overlay--bottom {
+  bottom: 0;
+  background: linear-gradient(0deg, var(--c-dark-primary), transparent);
+}
+
+/* 8. #COMPANY 3D ROTATING GLOBE + EXPANDING WHITE PLUS (+) TRANSITION (Style 25) */
+@keyframes santalCompanyRotateY {
+  0% {
+    transform: rotateY(var(--line-y-start, 0deg)) rotate(var(--line-z, 0deg));
+  }
+  100% {
+    transform: rotateY(calc(var(--line-y-start, 0deg) - 1turn))
+      rotate(var(--line-z, 0deg));
+  }
+}
+
+@keyframes santalCompanyTextCounterY {
+  0% {
+    transform: rotate(calc(var(--line-z, 0deg) * -1))
+      rotateY(calc(0deg - var(--line-y-start, 0deg)));
+  }
+  100% {
+    transform: rotate(calc(var(--line-z, 0deg) * -1))
+      rotateY(calc(1turn - var(--line-y-start, 0deg)));
+  }
+}
+
+.santal-company-dark {
+  position: relative;
+  min-height: 340lvh;
+  margin-top: -15lvh;
+  background-color: var(--c-dark-primary);
+  color: var(--c-light-primary);
+  z-index: 11;
+}
+
+.santal-company-globe-sticky {
+  position: sticky;
+  top: 0;
+  height: 100lvh;
+  margin-bottom: -100lvh;
+  overflow: hidden;
+  perspective: 100rem;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.santal-company-globe-svg {
+  width: min(64rem, 92vw);
+  height: auto;
+  opacity: 0.08;
+  color: #f0f0f0;
+}
+
+.santal-locations-3d {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+  transform: rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+}
+
+.santal-location-line {
+  --size: 20rem;
+  position: absolute;
+  width: var(--size);
+  height: 1.5px;
+  margin-left: calc(var(--size) * -0.5);
+  background-image: linear-gradient(
+    90deg,
+    transparent 50%,
+    rgba(240, 240, 240, 0.22) 50%
+  );
+  transform-origin: 50% 50%;
+  transform-style: preserve-3d;
+  animation: santalCompanyRotateY 24s linear infinite;
+}
+
+.santal-location-text {
+  position: absolute;
+  left: calc(100% + 0.35rem);
+  top: 50%;
+  margin-top: -0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  color: rgba(240, 240, 240, 0.72);
+  white-space: nowrap;
+  animation: santalCompanyTextCounterY 24s linear infinite;
+}
+
+.santal-company-pillars-wrap {
+  position: relative;
+  z-index: 3;
+  padding: 55lvh var(--padding) 10rem;
+}
+
+.santal-company-pillars-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--column-gap);
+}
+
+.santal-company-pillar-card {
+  border: 1px solid rgba(240, 240, 240, 0.16);
+  padding: 1.75rem 1.35rem;
+  background: rgba(15, 15, 15, 0.65);
+  backdrop-filter: blur(8px);
+}
+
+@media (max-width: 1023px) {
+  .santal-company-pillars-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.santal-company-plus-sticky {
+  position: sticky;
+  top: 0;
+  height: 100lvh;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.santal-company-split-titles {
+  display: flex;
+  gap: 2.5rem;
+  position: relative;
+  z-index: 2;
+}
+
+.santal-company-split-title {
+  will-change: transform;
+}
+
+.santal-plus-wrap {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 100vmax;
+  height: 100vmax;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.santal-plus-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform: scale(0);
+  will-change: transform;
+}
+
+.santal-plus-line {
+  position: absolute;
+  background-color: var(--c-light-primary);
+}
+
+.santal-plus-line--h {
+  left: 0;
+  top: 50%;
+  width: 100%;
+  height: 33.3333%;
+  transform: translateY(-50%);
+}
+
+.santal-plus-line--v {
+  top: 0;
+  left: 50%;
+  width: 33.3333%;
+  height: 100%;
+  transform: translateX(-50%);
+}
+
+
+/* ==========================================================================
+   9. SEAMLESS MULTI-PAGE PARALLAX PRIMITIVES (Used across all inner pages)
+   ========================================================================== */
+.seamless-page-flow {
+  position: relative;
+  overflow-x: clip;
+}
+
+.seamless-page-hero {
+  position: relative;
+  min-height: 155lvh;
+}
+
+.seamless-page-hero__sticky {
+  position: sticky;
+  top: 0;
+  height: 100lvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: calc(var(--header-height) + 1rem) 0 2rem;
+  overflow: hidden;
+  z-index: 4;
+}
+
+.seamless-page-hero__watermark {
+  padding: 0 var(--padding);
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.seamless-page-hero__body {
+  align-items: flex-end;
+  will-change: transform, opacity, filter;
+}
+
+.seamless-section {
+  position: relative;
+  padding: 10rem 0;
+  z-index: 5;
+  will-change: clip-path, opacity;
+}
+
+.seamless-section--overlap {
+  margin-top: -45lvh;
+}
+
+.seamless-section--dark {
+  background-color: var(--c-dark-primary);
+  color: var(--c-light-primary);
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    #000 9%,
+    #000 91%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    #000 9%,
+    #000 91%,
+    transparent 100%
+  );
+}
+
+.seamless-section--light {
+  background-color: var(--c-light-primary);
+  color: var(--c-dark-primary);
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    #000 9%,
+    #000 94%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    #000 9%,
+    #000 94%,
+    transparent 100%
+  );
+}
+
+.seamless-section__inner {
+  position: relative;
+  z-index: 2;
+  will-change: transform, opacity, filter;
+}
+
